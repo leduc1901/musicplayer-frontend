@@ -1,25 +1,48 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
+import Login from "./components/Login"
+import { persistStore, persistReducer } from 'redux-persist'
+import storage from 'redux-persist/lib/storage' // or whatever storage you are using
+import { PersistGate } from 'redux-persist/es/integration/react';
+import {createStore} from 'redux';
+import Reducer from "./reducers"
+import {Provider} from 'react-redux';
+import { BrowserRouter , Route , Switch, Link } from "react-router-dom"
+import User from "./components/User"
+
+
+const persistConfig = {
+  key: 'root',
+  storage,
+  // whitelist: [                    
+  //   'accountReducer'
+  // ],
+  blacklist: [
+    // 'late'
+  ]
+}
+
+const persistedReducer = persistReducer(persistConfig, Reducer)
+
+let store = createStore(persistedReducer);
+let persistor = persistStore(store)
+
+
+
 
 function App() {
+  console.log(store)
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+          <BrowserRouter>
+                <Switch>
+                  <Route path="/" exact component={Login} ></Route>
+                  <Route path="/users" exact component={User} ></Route>
+                </Switch>
+          </BrowserRouter>    
+      </PersistGate>
+    </Provider>
   );
 }
 
