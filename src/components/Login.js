@@ -18,14 +18,17 @@ export class Login extends Component {
     }
 
     componentDidMount(){
-        console.log(this.props.email)
+        if(this.props.loggedIn){
+            this.props.history.push("/player")
+        }
     }
 
     async testLogin(){
             try {
                 const logged = await axios.post(`/auth/login` , {email : this.state.email, password : this.state.password})
                 this.props.dispatchLoggedIn(this.state.email , this.state.password , logged.data.token)
-                this.props.history.push("/users")
+                console.log(logged.data.token)
+                this.props.history.push("/player")
             } catch (error) {
                 console.log(error)
             }
@@ -222,7 +225,8 @@ function mapStateToProps(state){
     return {
         email : state.email,
         password : state.password,
-        token : state.token
+        token : state.token,
+        loggedIn : state.loggedIn
     }
 }
 

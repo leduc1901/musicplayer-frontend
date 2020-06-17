@@ -8,7 +8,7 @@ import {createStore} from 'redux';
 import Reducer from "./reducers"
 import {Provider} from 'react-redux';
 import { BrowserRouter , Route , Switch, Link } from "react-router-dom"
-import User from "./components/User"
+import Player from "./components/Player"
 
 
 const persistConfig = {
@@ -38,7 +38,7 @@ function App() {
           <BrowserRouter>
                 <Switch>
                   <Route path="/" exact component={Login} ></Route>
-                  <Route path="/users" exact component={User} ></Route>
+                  <Route path="/player" exact component={Player} ></Route>
                 </Switch>
           </BrowserRouter>    
       </PersistGate>

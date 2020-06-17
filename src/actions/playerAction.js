@@ -8,3 +8,9 @@ export const loggedIn = (email , password , token) => {
         token
     }
 }
+
+export const logOut = () => {
+    return {
+        type : ActionType.LOG_OUT
+    }
+}
