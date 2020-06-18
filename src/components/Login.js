@@ -26,7 +26,7 @@ export class Login extends Component {
     async testLogin(){
             try {
                 const logged = await axios.post(`/auth/login` , {email : this.state.email, password : this.state.password})
-                this.props.dispatchLoggedIn(this.state.email , this.state.password , logged.data.token)
+                this.props.dispatchLoggedIn(this.state.email , this.state.password , logged.data.token , logged.data.id)
                 console.log(logged.data.token)
                 this.props.history.push("/player")
             } catch (error) {
@@ -232,7 +232,7 @@ function mapStateToProps(state){
 
 function mapDispatchToProps(dispatch){
     return {
-        dispatchLoggedIn : (email, password, token) => dispatch(loggedIn(email, password, token))
+        dispatchLoggedIn : (email, password, token , id) => dispatch(loggedIn(email, password, token , id))
     }
 }
 

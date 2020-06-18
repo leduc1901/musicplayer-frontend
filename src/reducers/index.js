@@ -4,6 +4,7 @@ const defaultState = {
     email : "",
     password : "",
     token : "",
+    id : 0,
     loggedIn : false
 }
 
@@ -14,6 +15,7 @@ export default function playerReducer(state = defaultState, action){
                 email : action.email,
                 password : action.password,
                 token : action.token,
+                id : action.id,
                 loggedIn: true
             })
         case ActionType.LOG_OUT:
@@ -21,6 +23,7 @@ export default function playerReducer(state = defaultState, action){
                 email : "",
                 password : "",
                 token : "",
+                id : 0,
                 loggedIn : false
             })
         default:
