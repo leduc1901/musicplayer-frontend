@@ -7,7 +7,11 @@ import Slider from "react-input-slider"
 import PrevIcon from "../Icons/PrevIcon";
 import NextIcon from "../Icons/NextIcon";
 import PauseIcon from "../Icons/PauseIcon"; 
-import PlayIcon from "../Icons/PlayIcon"
+import PlayIcon from "../Icons/PlayIcon";
+import { Link } from "react-router-dom"
+
+
+
 
 export class Player extends Component {
     constructor(props){
@@ -24,7 +28,8 @@ export class Player extends Component {
             onPlaylist : false,
             isAdding : false,
             addSong : 0,
-            currentPlaylist : null
+            currentPlaylist : null,
+            isRandom : false
         }
     }
     audioReference = createRef()
@@ -45,7 +50,7 @@ export class Player extends Component {
 
     changeSong = (index) => {
         this.setState({
-            isPlaying : false ,
+            isPlaying : true ,
             songIndex : index
         })
     }
@@ -85,6 +90,7 @@ export class Player extends Component {
         this.setState({
           currentTime : x
         })
+        
         if(!this.state.isPlaying){
           this.setState({
             isPlaying : true
@@ -92,12 +98,12 @@ export class Player extends Component {
           this.audioReference.current.play()
         }
       }
-    
 
       loadData = () => {
         this.setState({
           duration : this.audioReference.current.duration
         })
+        
         if(this.state.isPlaying){
           this.audioReference.current.play();
         }
@@ -145,6 +151,7 @@ export class Player extends Component {
       try {
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data.songs , onPlaylist : true})
+        console.log(this.state.songs)
       } catch (error) {
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
@@ -243,11 +250,35 @@ export class Player extends Component {
       }
     }
 
+    randomMode = () => {
+      if(this.state.isRandom){
+        this.setState({isRandom:false})
+      }else{
+        this.setState({isRandom:true})
+      }
+    }
+
+    nextSong = () => {
+      let sI = this.state.songIndex
+      if(this.state.isRandom == false){   
+        sI++
+        if(this.state.songIndex === this.state.songs.length - 1){
+          this.setState({songIndex : 0})
+        }else{
+          this.setState({songIndex : sI})
+        }
+      }else{
+        sI = Math.floor(Math.random() * (this.state.songs.length - 1))
+        this.setState({songIndex : sI})
+      }
+      
+    }
+
     renderPlayer = () => {
         if(this.state.songs.length >= 1){
           return (
                     <>
-                    <img className="thumbnail" src={"./images/" + this.state.songs[this.state.songIndex].image} alt="thumbnail" />
+                    <img className="thumbnail" src={this.state.songs[this.state.songIndex].image} alt="thumbnail" />
                     <h2 className="title" >{this.state.songs[this.state.songIndex].name}</h2>
                     <p className="singer" >{this.state.songs[this.state.songIndex].singer}</p>
                     <h5>{this.state.songs[this.state.songIndex].category}</h5>
@@ -329,11 +360,12 @@ export class Player extends Component {
                 />
                <audio
                   ref = {this.audioReference}
-                  src = {"./audio/" + this.state.songs[this.state.songIndex].url}
+                  src = {this.state.songs[this.state.songIndex].url}
                   onLoadedData = {this.loadData}
                   onTimeUpdate={()=> this.setState({currentTime : this.audioReference.current.currentTime})}
-                  onEnded={() => this.setState({isPlay : false})}
+                  onEnded={this.nextSong}
                 />
+                <button class={this.state.isRandom ? "random-btn-active" : "random-btn"} onClick={this.randomMode}>RANDOM</button>
                 </>
             )
         }
@@ -382,6 +414,7 @@ export class Player extends Component {
           <div className="container">  
           {this.renderAddPlaylist()}
           <button class="logout-btn" onClick={this.logOutBtn} >Log Out</button>
+          <button class="logout-btn" ><Link to="/user">User</Link></button>
             <div className="player-container">
                     <div className="song-list">
                     <div className="playlist-header">

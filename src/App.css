@@ -674,3 +674,22 @@ iframe {
   line-height: 60px;
   cursor: pointer;
 }
+.random-btn{
+  margin-top: 10px;
+  border: 1px black solid;
+  border-radius: 10px;
+  width: 70px;
+  height: 30px;
+  font-weight: bold;
+  font-size: 10px;
+}
+.random-btn-active{
+  margin-top: 10px;
+  border-radius: 10px;
+  width: 70px;
+  height: 30px;
+  font-weight: bold;
+  font-size: 10px;
+  background: linear-gradient(to left, #21d4fd, #b721ff);
+  color: white;
+}
