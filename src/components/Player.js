@@ -21,7 +21,10 @@ export class Player extends Component {
             songIndex : 0,
             playlists : [],
             personal : false,
-            onPlaylist : false
+            onPlaylist : false,
+            isAdding : false,
+            addSong : 0,
+            currentPlaylist : null
         }
     }
     audioReference = createRef()
@@ -48,7 +51,7 @@ export class Player extends Component {
     }
 
     backToAll = () => {
-      this.setState({onPlaylist : false})
+      this.setState({onPlaylist : false , currentPlaylist : null})
       this.fetchSongs()
     }
 
@@ -138,23 +141,96 @@ export class Player extends Component {
     }
 
     async fetchPlaylistSong(index){
+      this.setState({songIndex : 0 , currentPlaylist : index})
       try {
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data[0].songs , onPlaylist : true})
-        console.log(this.state.songs)
+        this.setState({songs : songs.data.songs , onPlaylist : true})
       } catch (error) {
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
-        const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
+        const songs = await axios.get(`playlists/${index +1}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data})
       }
     }
+
+    async addToPlaylist(index){
+      try {
+        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index+1 , song_id : this.state.addSong+1}})
+        this.setState({addSong : 0})
+        alert("Added to playlist")
+      } catch (error) {
+        alert("You already have this song on this playlist")
+      }
+    }
+
+    async deletePlaylistSong(index){
+      try {
+        const del = await axios.delete(`playlists_songs/${index}`)
+        alert("Delete Successful")
+        this.fetchPlaylistSong(this.state.currentPlaylist)
+      } catch (error) {
+        alert("Something Went Wrong")
+      }
+    }
+
+    async addNewList(text){
+      try {
+        const add = await axios.post(`playlists`, {playlist : {name: text , privacy : "public" , user_id : this.props.id}}  , {headers : {'Authorization': this.props.token}} )
+        if(this.state.onPlaylist){
+          this.fetchMyPlaylists()
+        }else{
+          this.fetchAllPlaylists()
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
+    async deletePlaylist(index){
+      console.log(index)
+      try {
+        const del = await axios.delete(`playlists/${index}` , {headers : {'Authorization': this.props.token}} )
+        this.backToAll()
+        this.fetchMyPlaylists()
+      } catch (error) {
+        console.log(error)
+      }
+    }
+
     prevBtn = () => {
       if(this.state.songIndex > 0){
         let index = this.state.songIndex - 1
         this.setState({
           songIndex :  index
         })
+      }
+    }
+
+    addNewPlaylist = () => {
+      let text = window.prompt("Enter New Playlist Name")
+      if(text != null){
+        this.addNewList(text)
+      }
+    }
+
+    closeAdding = () => {
+      this.setState({isAdding : false})
+    }
+
+    deleteOrAdd = (index) => {
+      if(this.state.onPlaylist){
+          if(window.confirm("Are You Sure ?")){
+            this.deletePlaylistSong(index)
+          }
+          
+      }else{
+        this.setState({isAdding : true , addSong : index})
+      }
+    }
+
+    deletePlaylistBtn = (index) => {
+      if(window.confirm("Are You Sure")){
+        this.deletePlaylist(index)
       }
     }
 
@@ -263,10 +339,48 @@ export class Player extends Component {
         }
     }
 
+    renderAddPlaylist = () => {
+      if(this.state.isAdding){
+        return (
+          <>
+          <div className="add-playlist-container" >         
+          </div>
+          <div className="add-playlist-middle" >
+                <div className="add-playlist-header">
+                    Add To Playlist
+                    <i class="fa fa-times" onClick={this.closeAdding} aria-hidden="true"></i>    
+                </div>
+                <div className="add-to-playlist-option">
+                  {this.state.playlists && this.state.playlists.map((item , index) => {
+                                if(item.user_id == this.props.id){
+                                  return (
+                                    <>
+                                      <div className="song-item" >
+                                          <div className="song-des">
+                                              <p className="song-name">{item.name}</p>
+                                              <p className="song-artist" >{item.user}</p>
+                                          </div>
+                                          <div className="add-btn" onClick={() => this.addToPlaylist(index)} >                             
+                                            <i class="fa fa-plus" aria-hidden="true"></i>                
+                                        </div> 
+                                      </div>
+                                     
+                                    </>
+                                  )
+                                }  
+                    })}
+                </div>
+              </div>
+              </>
+        )
+      }
+      
+    }
 
     render() {
         return (
-          <>
+          <div className="container">  
+          {this.renderAddPlaylist()}
           <button class="logout-btn" onClick={this.logOutBtn} >Log Out</button>
             <div className="player-container">
                     <div className="song-list">
@@ -285,7 +399,9 @@ export class Player extends Component {
                                         </p>
                                         <p className="song-artist" >{item.singer}</p>
                                     </div>
-                                    
+                                    <div className="add-btn" onClick={() => this.deleteOrAdd(item.id)} >                             
+                                      <i class={this.state.onPlaylist ? "fa fa-minus" : "fa fa-plus"} aria-hidden="true"></i>                
+                                    </div>
                                 </div>
                             )
                         })}
@@ -303,20 +419,29 @@ export class Player extends Component {
                                 My Playlists
                           </div>
                         </div>
+                        <div className="add-playlist" onClick={this.addNewPlaylist} >                             
+                                      <i class="fa fa-plus" aria-hidden="true"></i>                
+                        </div>
                         {this.state.playlists && this.state.playlists.map((item , index) => {
                               return (
-                                  <div className="song-item" onClick={() => this.fetchPlaylistSong(index)}>
+                                  <div className="song-item" onClick={() => this.fetchPlaylistSong(item.id)}>
                                       <div className="song-des">
-                                          <p className="song-name">{item.name}</p>
+                                          <p className="song-name">{item.name}
+                                          <a>
+                                            {this.state.currentPlaylist == index + 1?  <PlayIcon/> : ""}
+                                          </a></p>
                                           <p className="song-artist" >{item.user}</p>
                                       </div>
+                                      <div className="add-btn" onClick={() => this.deletePlaylistBtn(item.id)} >                             
+                                       <i class={this.state.personal ? "fa fa-minus" : ""} aria-hidden="true"></i>                
+                                    </div>
                                   </div>
                               )
                           })}
                     </div>
                     
             </div>
-            </>
+            </div>
         )
     }
 }
