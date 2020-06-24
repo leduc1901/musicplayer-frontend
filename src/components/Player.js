@@ -9,7 +9,7 @@ import NextIcon from "../Icons/NextIcon";
 import PauseIcon from "../Icons/PauseIcon"; 
 import PlayIcon from "../Icons/PlayIcon";
 import { Link } from "react-router-dom"
-
+import Logout from "./Logout"
 
 
 
@@ -17,7 +17,6 @@ export class Player extends Component {
     constructor(props){
         super(props)
         this.state = {
-            users : [],
             songs : [],
             currentTime : 0,
             duration : 0,
@@ -29,7 +28,9 @@ export class Player extends Component {
             isAdding : false,
             addSong : 0,
             currentPlaylist : null,
-            isRandom : false
+            isRandom : false,
+            searchValue : "",
+            userAvatar : ""
         }
     }
     audioReference = createRef()
@@ -55,6 +56,8 @@ export class Player extends Component {
         })
     }
 
+
+
     backToAll = () => {
       this.setState({onPlaylist : false , currentPlaylist : null})
       this.fetchSongs()
@@ -66,11 +69,22 @@ export class Player extends Component {
         }
         this.fetchSongs()
         this.fetchAllPlaylists()
+        this.fetchUserAvatar()
     }
-    logOutBtn = () => {
-        this.props.dispatchLogOut()
-        this.props.history.push("/")
-       
+   
+
+    handleSearch = (input) => {
+      this.setState({
+          searchValue : input.target.value
+      })
+      
+      setTimeout(() => {
+        if(this.state.searchValue == ""){
+          this.fetchSongs()
+        }else{
+          this.fetchSearchSongs()
+        }
+      }, 300);
     }
 
     pausePlayClick = () => {
@@ -84,6 +98,7 @@ export class Player extends Component {
         })
       }
 
+    
     sliderChange = ({x}) => {
         console.log(x)
         this.audioReference.current.currentTime = x;
@@ -109,6 +124,20 @@ export class Player extends Component {
         }
       }
     
+    async fetchUserAvatar(){
+      try{
+        const avatar = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}})
+        console.log(avatar.data)
+        this.setState({userAvatar : avatar.data.avatar})
+      }catch(e){
+        const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        const avatar = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}})
+        this.setState({userAvatar : avatar.data.avatar})
+
+      }
+    }
+
     async fetchAllPlaylists(){
       try {
         const playlists = await axios.get(`/playlists` , {headers : {'Authorization': this.props.token}})
@@ -160,9 +189,21 @@ export class Player extends Component {
       }
     }
 
+    async fetchSearchSongs(){
+      try {
+        const songs = await axios.post(`search/${this.state.searchValue}` , {headers : {'Authorization': this.props.token}})
+        this.setState({songs : songs.data})
+      } catch (error) {
+        const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        const songs = await axios.post(`search/${this.state.searchValue}` , {headers : {'Authorization': this.props.token}})
+        this.setState({songs : songs.data})
+      }
+    }
+
     async addToPlaylist(index){
       try {
-        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index+1 , song_id : this.state.addSong+1}})
+        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index+1 , song_id : this.state.addSong}})
         this.setState({addSong : 0})
         alert("Added to playlist")
       } catch (error) {
@@ -331,10 +372,22 @@ export class Player extends Component {
         )
     }
 
+    renderSearchBtn = () => {
+      if(!this.state.onPlaylist){
+        return (
+          <div className="search-btn">
+            <i class="fa fa-search" aria-hidden="true"></i><input onChange={this.handleSearch} type="text" size="50" placeholder="Search your song's name, singer, or category" />
+          </div>
+          
+        )
+      }
+    }
+
     renderSlider = () => {
         if(this.state.songs.length > 1){
             return (
                 <>
+                <div className="song-time">{Math.floor((this.state.duration - this.state.currentTime) / 60) + ":" + ((this.state.duration - this.state.currentTime) % 60 ? Math.floor(this.state.duration - this.state.currentTime) % 60 : '00')}</div>
                 <Slider
               axis = "x"
               xmax={this.state.duration}
@@ -343,17 +396,17 @@ export class Player extends Component {
                   styles={{
                     track: {
                       backgroundColor: "#e3e3e3",
-                      height: "2px",
+                      height: "10px",
                     },
                     active: {
-                      backgroundColor: "#333",
-                      height: "2px",
+                      backgroundColor: "#1DB954",
+                      height: "10px",
                     },
                     thumb: {
-                      marginTop: "-5px",
+                      marginTop: "0",
                       width: "12px",
                       height: "12px",
-                      backgroundColor: "#333",
+                      backgroundColor: "#1DB954",
                       borderRadius: 100,
                     },
                   }}
@@ -413,16 +466,18 @@ export class Player extends Component {
         return (
           <div className="container">  
           {this.renderAddPlaylist()}
-          <button class="logout-btn" onClick={this.logOutBtn} >Log Out</button>
+          <Logout/>
           <button class="logout-btn" ><Link to="/user">User</Link></button>
             <div className="player-container">
                     <div className="song-list">
                     <div className="playlist-header">
-                          {this.renderSongHeader()}          
+                          {this.renderSongHeader()}   
+                              
                     </div>
+                    {this.renderSearchBtn()}   
                         {this.state.songs && this.state.songs.map((item , index) => {
                             return (
-                                <div className="song-item" onClick={() => this.changeSong(index)}>
+                                <div className={this.state.songIndex == index ?  "song-item song-current" : "song-item"} onClick={() => this.changeSong(index)}>
                                     <div className="song-des">
                                         <p className="song-name">
                                           {item.name}
@@ -465,8 +520,8 @@ export class Player extends Component {
                                           </a></p>
                                           <p className="song-artist" >{item.user}</p>
                                       </div>
-                                      <div className="add-btn" onClick={() => this.deletePlaylistBtn(item.id)} >                             
-                                       <i class={this.state.personal ? "fa fa-minus" : ""} aria-hidden="true"></i>                
+                                      <div className={this.state.personal ? "add-btn" : "hidden-btn"} onClick={() => this.deletePlaylistBtn(item.id)} >                             
+                                       <i class="fa fa-minus" aria-hidden="true"></i>                
                                     </div>
                                   </div>
                               )

@@ -30,7 +30,7 @@ export class Login extends Component {
                 console.log(logged.data.token)
                 this.props.history.push("/player")
             } catch (error) {
-                console.log(error)
+                alert("Sai Thông Tin Đăng Nhập")
             }
       
     }
@@ -43,7 +43,7 @@ export class Login extends Component {
                 login : 1
             })
         } catch (error) {
-            console.log(error)
+            alert("Sai Đâu Đó Rồi Fen")
         }
   
 }

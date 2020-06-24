@@ -12,7 +12,7 @@ function SvgNextIcon(props) {
     >
       <style>
         {
-          ".next-icon_svg__st0{fill:#fff;stroke:#000;stroke-width:.75;stroke-miterlimit:10}"
+          ".next-icon_svg__st0{fill:#1DB954;stroke:#1DB954;stroke-width:.75;stroke-miterlimit:10}"
         }
       </style>
       <path
