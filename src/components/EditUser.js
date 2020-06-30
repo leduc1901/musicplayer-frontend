@@ -4,7 +4,7 @@ import {loggedIn , logOut} from "../actions/playerAction"
 import {connect} from "react-redux"
 import   Sidebar  from "./Sidebar"
 
-export class User extends Component {
+export class EditUser extends Component {
   constructor(props){
     super(props)
     this.state = {
@@ -14,7 +14,8 @@ export class User extends Component {
       passwordConfirmation: "",
       avatar : "",
       newPhoto : "",
-      trueName : ""
+      trueName : "",
+      id : null
     }
   }
 
@@ -39,7 +40,10 @@ export class User extends Component {
   }
 
   componentDidMount(){
-      this.getUserInfo()
+      let id1 = this.props.match.params.id
+      this.getUserInfo(id1)
+      this.setState({id : id1} , () => {console.log(this.state.id)})
+      
   }
 
   updateAll = () => {
@@ -51,13 +55,6 @@ export class User extends Component {
     
   }
 
-  async loggedInAgain(){
-    const logged = await axios.post(`/auth/login` , {email : this.state.email, password : this.state.password }).then(res => {
-      this.getUserInfo()
-      this.props.dispatchLoggedIn(this.state.email , this.state.password , res.data.token, res.data.id , res.data.role)
-      alert("Update Success !")
-    })
-  }
 
   async updateUser(){
     const formData = new FormData();
@@ -66,16 +63,20 @@ export class User extends Component {
         formData.append('email' , this.state.email)
         formData.append('password' , this.state.password)
         formData.append('password_confirmation' , this.state.passwordConfirmation)
-    if(this.state.name != "" && this.state.email != "" && this.state.password != "" && this.state.passwordConfirmation != "" && this.state.name.length >= 5 && this.state.password.length >= 5){
+    if(this.state.name != "" && this.state.email != "" && this.state.password != "" && this.state.passwordConfirmation != "" && this.state.name.length >= 6 && this.state.password.length >= 6){
       try{
-        const photo = await axios.put(`/users/${this.props.id}`, formData, {headers : {'Authorization': this.props.token}}).then(res => {
-          this.loggedInAgain()
-        })
+        
+        const photo = await axios.put(`/users/${this.state.id}`, formData, {headers : {'Authorization': this.props.token}}).then(res => {
+            this.getUserInfo(this.state.id)
+            alert("Update Success")
+        })  
       }catch(e){
+        console.log(e.message)
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
-        const photo = await axios.put(`/users/${this.props.id}`, formData, {headers : {'Authorization': this.props.token}}).then(res => {
-          this.loggedInAgain()
+        const photo = await axios.put(`/users/${this.state.id}`, formData, {headers : {'Authorization': this.props.token}}).then(res => {
+            this.getUserInfo(this.state.id)
+            alert("Update Success !")
         })
       }
     }else{
@@ -84,16 +85,16 @@ export class User extends Component {
     
   }
 
-  async getUserInfo(){
+  async getUserInfo(id){
     try {
-      const user = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}} )
+      const user = await axios.get(`/users/${id}` , {headers : {'Authorization': this.props.token}} )
       console.log(user.data)
       this.setState({trueName : user.data.name , email : user.data.email , avatar : user.data.avatar})
     } catch (error) {
       console.log(error)
       const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
       this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
-      const user = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}} )
+      const user = await axios.get(`/users/${id}` , {headers : {'Authorization': this.props.token}} )
       this.setState({trueName : user.data.name , email : user.data.email , avatar : user.data.avatar})
     }
   }
@@ -106,7 +107,7 @@ export class User extends Component {
       <div className="container">
         <Sidebar/>
         <div className="admin-container">
-        <div className="admin-title">My Profile : {this.state.trueName}</div>
+        <div className="admin-title">Edit Profile : {this.state.trueName}</div>
           <div className="update-container">
             <div className="update-part">
               <div className="admin-para">Username</div>
@@ -158,4 +159,4 @@ function mapDispatchToProps(dispatch){
 }
 
 
-export default connect(mapStateToProps, mapDispatchToProps)(User)
+export default connect(mapStateToProps, mapDispatchToProps)(EditUser)

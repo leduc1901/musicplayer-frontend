@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import {connect} from "react-redux"
 import {logOut} from "../actions/playerAction"
+import {withRouter} from "react-router-dom"
 
 export class Logout extends Component {
 
@@ -34,4 +35,4 @@ function mapDispatchToProps(dispatch){
 }
 
 
-export default connect(mapStateToProps, mapDispatchToProps)(Logout)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Logout))
