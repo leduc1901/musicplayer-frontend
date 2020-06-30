@@ -12,7 +12,7 @@ function SvgPauseIcon(props) {
       height="20px"
       {...props}
     >
-      <style>{".pause-icon_svg__st0{fill:#fff}"}</style>
+      <style>{".pause-icon_svg__st0{fill:#1DB954}"}</style>
       <path className="pause-icon_svg__st0" d="M.4.4h5.3v21.3H.4z" />
       <path d="M5.3.8v20.5H.8V.8h4.5M6 0H0v22h6V0z" />
       <path className="pause-icon_svg__st0" d="M8.4.4h5.3v21.3H8.4z" />
