@@ -1,8 +1,9 @@
 import React, { Component , createRef} from 'react'
+import 'antd/dist/antd.css';
 import {connect} from "react-redux"
 import axios from "axios"
 import {loggedIn , logOut} from "../actions/playerAction"
-import {withRouter} from "react-router"
+import {withRouter} from "react-router-dom"
 import Slider from "react-input-slider"
 import PrevIcon from "../Icons/PrevIcon";
 import NextIcon from "../Icons/NextIcon";
@@ -10,6 +11,10 @@ import PauseIcon from "../Icons/PauseIcon";
 import PlayIcon from "../Icons/PlayIcon";
 import { Link } from "react-router-dom"
 import Logout from "./Logout"
+
+import { Spin } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
+const antIcon = <LoadingOutlined style={{ fontSize: 80 , color: '#1DB954'  }} spin />;
 
 
 
@@ -30,20 +35,25 @@ export class Player extends Component {
             currentPlaylist : null,
             isRandom : false,
             searchValue : "",
-            userAvatar : ""
+            userAvatar : "",
+            loading : true,
+            loadingPlaylist : true,
+            currentID : null
         }
     }
+
+
     audioReference = createRef()
     changeToAll = () => {
       if(this.state.personal){
-        this.setState({personal: false})
+        this.setState({personal: false, currentPlaylist : null})
         this.fetchAllPlaylists()
       }
     }
 
     changeToMine = () => {
       if(!this.state.personal){
-        this.setState({personal: true})
+        this.setState({personal: true , currentPlaylist : null})
         this.fetchMyPlaylists()
       }
     }
@@ -67,11 +77,16 @@ export class Player extends Component {
         if(!this.props.loggedIn){
             this.props.history.push("/")
         }
-        this.fetchSongs()
+        document.title = 'Music Player';
+        this.fetchSongs().then(res => {
+
+        })
         this.fetchAllPlaylists()
         this.fetchUserAvatar()
     }
    
+
+    
 
     handleSearch = (input) => {
       this.setState({
@@ -128,10 +143,10 @@ export class Player extends Component {
       try{
         const avatar = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}})
         console.log(avatar.data)
-        this.setState({userAvatar : avatar.data.avatar})
+        this.setState({userAvatar : [avatar.data.avatar, avatar.data.name]})
       }catch(e){
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const avatar = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}})
         this.setState({userAvatar : avatar.data.avatar})
 
@@ -144,7 +159,7 @@ export class Player extends Component {
         this.setState({playlists : playlists.data})
       } catch (error) {
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const playlists = await axios.get(`/playlists` , {headers : {'Authorization': this.props.token}})
         this.setState({playlists : playlists.data})
       }
@@ -152,60 +167,69 @@ export class Player extends Component {
 
     async fetchMyPlaylists(){
       try {
+        this.setState({loadingPlaylists : true})
         const playlists =  await axios.get(`/playlists/user/${this.props.id}` , {headers : {'Authorization': this.props.token}})
-        this.setState({playlists : playlists.data})
+        this.setState({playlists : playlists.data , loadingPlaylists: false})
       } catch (error) {
+        this.setState({loadingPlaylists : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const playlists =  await axios.get(`/playlists/user/${this.props.id}` , {headers : {'Authorization': this.props.token}})
-        this.setState({playlists : playlists.data})
+        this.setState({playlists : playlists.data , loadingPlaylists:false})
       }
     }
 
 
     async fetchSongs(){
         try {
+            this.setState({loading : true})
             const songs = await axios.get(`/songs` , {headers : {'Authorization': this.props.token}})
-            this.setState({songs : songs.data})
+            this.setState({songs : songs.data , loading : false})
         } catch (error) {
+            this.setState({loading : true})
             const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-            this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+            this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
             const songs = await axios.get(`/songs` , {headers : {'Authorization': this.props.token}})
-            this.setState({songs : songs.data})
+            this.setState({songs : songs.data , loading : false})
         }
     }
 
     async fetchPlaylistSong(index){
       this.setState({songIndex : 0 , currentPlaylist : index})
       try {
+        this.setState({loading : true})
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data.songs , onPlaylist : true})
+        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
         console.log(this.state.songs)
       } catch (error) {
+        this.setState({loading : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const songs = await axios.get(`playlists/${index +1}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data})
+        this.setState({songs : songs.data , onPlaylist : true, loading:false , currentID: songs.data.user_id})
       }
     }
 
     async fetchSearchSongs(){
       try {
+        this.setState({loading : true})
         const songs = await axios.post(`search/${this.state.searchValue}` , {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data})
+        this.setState({songs : songs.data , loading:false})
       } catch (error) {
+        this.setState({loading : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
-        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id)
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const songs = await axios.post(`search/${this.state.searchValue}` , {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data})
+        this.setState({songs : songs.data, loading:false})
       }
     }
 
     async addToPlaylist(index){
       try {
-        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index+1 , song_id : this.state.addSong}})
-        this.setState({addSong : 0})
+        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong}})
+        
         alert("Added to playlist")
+        this.setState({addSong : 0 , isAdding:false})
       } catch (error) {
         alert("You already have this song on this playlist")
       }
@@ -235,7 +259,6 @@ export class Player extends Component {
     }
 
     async deletePlaylist(index){
-      console.log(index)
       try {
         const del = await axios.delete(`playlists/${index}` , {headers : {'Authorization': this.props.token}} )
         this.backToAll()
@@ -267,8 +290,10 @@ export class Player extends Component {
 
     deleteOrAdd = (index) => {
       if(this.state.onPlaylist){
-          if(window.confirm("Are You Sure ?")){
+          if(window.confirm("Are You Sure ?")  && this.state.currentID == this.props.id){
             this.deletePlaylistSong(index)
+          }else{
+            alert("Can't delete other's song")
           }
           
       }else{
@@ -424,6 +449,8 @@ export class Player extends Component {
         }
     }
 
+    
+
     renderAddPlaylist = () => {
       if(this.state.isAdding){
         return (
@@ -436,18 +463,13 @@ export class Player extends Component {
                     <i class="fa fa-times" onClick={this.closeAdding} aria-hidden="true"></i>    
                 </div>
                 <div className="add-to-playlist-option">
-                  {this.state.playlists && this.state.playlists.map((item , index) => {
+                  {this.state.loading == true ? <Spin indicator={antIcon}/> : this.state.playlists && this.state.playlists.map((item , index) => {
                                 if(item.user_id == this.props.id){
                                   return (
                                     <>
-                                      <div className="song-item" >
-                                          <div className="song-des">
-                                              <p className="song-name">{item.name}</p>
-                                              <p className="song-artist" >{item.user}</p>
-                                          </div>
-                                          <div className="add-btn" onClick={() => this.addToPlaylist(index)} >                             
-                                            <i class="fa fa-plus" aria-hidden="true"></i>                
-                                        </div> 
+                                      <div className="add-playlist-item"  onClick={() => this.addToPlaylist(item.id)}>
+                                          {item.name}
+                                          
                                       </div>
                                      
                                     </>
@@ -463,22 +485,26 @@ export class Player extends Component {
     }
 
     render() {
+      
         return (
           <div className="container">  
           {this.renderAddPlaylist()}
-          <Logout/>
-          <button class="logout-btn" ><Link to="/user">User</Link></button>
+          <div className="user-option">
+            <Logout/>
+            <button class="logout-btn" ><img src={this.state.userAvatar[0] != "" ? this.state.userAvatar[0] : "/images/default-profile.png"}/> <Link to="/user">{this.state.userAvatar[1]}</Link></button>
+          </div>
+          
             <div className="player-container">
                     <div className="song-list">
-                    <div className="playlist-header">
-                          {this.renderSongHeader()}   
-                              
-                    </div>
+                      <div className="playlist-header">
+                            {this.renderSongHeader()}   
+                                
+                      </div>
                     {this.renderSearchBtn()}   
-                        {this.state.songs && this.state.songs.map((item , index) => {
+                        {this.state.loading == true ? <Spin indicator={antIcon}/> :  this.state.songs && this.state.songs.map((item , index) => {
                             return (
-                                <div className={this.state.songIndex == index ?  "song-item song-current" : "song-item"} onClick={() => this.changeSong(index)}>
-                                    <div className="song-des">
+                                <div className={this.state.songIndex == index ?  "song-item song-current" : "song-item"} >
+                                    <div className="song-des" onClick={() => this.changeSong(index)}> 
                                         <p className="song-name">
                                           {item.name}
                                           <a>
@@ -510,9 +536,9 @@ export class Player extends Component {
                         <div className="add-playlist" onClick={this.addNewPlaylist} >                             
                                       <i class="fa fa-plus" aria-hidden="true"></i>                
                         </div>
-                        {this.state.playlists && this.state.playlists.map((item , index) => {
+                        {this.state.loadingPlaylists == true ? <Spin indicator={antIcon}/> : this.state.playlists && this.state.playlists.map((item , index) => {
                               return (
-                                  <div className="song-item" onClick={() => this.fetchPlaylistSong(item.id)}>
+                                  <div className="song-item " onClick={() => this.fetchPlaylistSong(item.id)}>
                                       <div className="song-des">
                                           <p className="song-name">{item.name}
                                           <a>
@@ -540,16 +566,17 @@ function mapStateToProps(state){
         token : state.token,
         password : state.password,
         loggedIn : state.loggedIn,
-        id : state.id
+        id : state.id,
+        role : state.role
     }
 }
 
 function mapDispatchToProps(dispatch){
     return {
-        dispatchLoggedIn : (email, password, token , id) => dispatch(loggedIn(email, password, token , id)),
+        dispatchLoggedIn : (email, password, token , id , role) => dispatch(loggedIn(email, password, token , id , role)),
         dispatchLogOut : () => dispatch(logOut())
     }
 }
 
 
-export default connect(mapStateToProps, mapDispatchToProps)(Player)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Player))

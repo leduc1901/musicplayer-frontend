@@ -5,7 +5,8 @@ const defaultState = {
     password : "",
     token : "",
     id : 0,
-    loggedIn : false
+    loggedIn : false,
+    role : ""
 }
 
 export default function playerReducer(state = defaultState, action){
@@ -16,7 +17,8 @@ export default function playerReducer(state = defaultState, action){
                 password : action.password,
                 token : action.token,
                 id : action.id,
-                loggedIn: true
+                loggedIn: true,
+                role : action.role
             })
         case ActionType.LOG_OUT:
             return Object.assign({}, state , {
@@ -24,7 +26,8 @@ export default function playerReducer(state = defaultState, action){
                 password : "",
                 token : "",
                 id : 0,
-                loggedIn : false
+                loggedIn : false,
+                role : ""
             })
         default:
             return state
