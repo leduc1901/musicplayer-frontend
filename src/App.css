@@ -581,6 +581,7 @@ iframe {
   background-color: #1DB954;
   transition: 0.3s;
 }
+
 .add-playlist{
   width : 100%;
   height: 50px;
@@ -756,16 +757,7 @@ iframe {
   margin: 30px 40% !important;
 }
 
-.random-btn{
-  margin-top: 10px;
-  border: 1px #1DB954 solid;
-  border-radius: 10px;
-  width: 70px;
-  height: 30px;
-  font-weight: bold;
-  font-size: 10px;
-  color: white;
-}
+
 .random-btn-active{
   margin-top: 10px;
   border-radius: 10px;
@@ -955,4 +947,17 @@ a >i{
   background-color: #1DB954;
   font-size: 14px;
   font-weight: bold;
+}
+.player-footer{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+.public-btn{
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  text-align: center;
 }

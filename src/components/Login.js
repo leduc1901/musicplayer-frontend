@@ -19,8 +19,19 @@ export class Login extends Component {
 
     componentDidMount(){
         if(this.props.loggedIn){
+            this.already()
+
             this.props.history.push("/player")
             
+        }
+    }
+
+    async already(){
+        try {
+            const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+            this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id  ,logged.data.role)
+        } catch (error) {
+            console.log(error)
         }
     }
 
@@ -28,7 +39,6 @@ export class Login extends Component {
             try {
                 const logged = await axios.post(`/auth/login` , {email : this.state.email, password : this.state.password})
                 this.props.dispatchLoggedIn(this.state.email , this.state.password , logged.data.token , logged.data.id , logged.data.role)
-                console.log(logged.data.token)
                 this.props.history.push("/player")
             } catch (error) {
                 alert("Sai Thông Tin Đăng Nhập")

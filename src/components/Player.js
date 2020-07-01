@@ -38,7 +38,8 @@ export class Player extends Component {
             userAvatar : "",
             loading : true,
             loadingPlaylist : true,
-            currentID : null
+            currentID : null,
+            onRepeat : false
         }
     }
 
@@ -78,11 +79,9 @@ export class Player extends Component {
             this.props.history.push("/")
         }
         document.title = 'Music Player';
-        this.fetchSongs().then(res => {
-
-        })
+        this.fetchSongs().then(res => {this.fetchUserAvatar()})
         this.fetchAllPlaylists()
-        this.fetchUserAvatar()
+        
     }
    
 
@@ -170,6 +169,7 @@ export class Player extends Component {
         this.setState({loadingPlaylists : true})
         const playlists =  await axios.get(`/playlists/user/${this.props.id}` , {headers : {'Authorization': this.props.token}})
         this.setState({playlists : playlists.data , loadingPlaylists: false})
+        console.log(this.state.playlists)
       } catch (error) {
         this.setState({loadingPlaylists : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
@@ -200,12 +200,14 @@ export class Player extends Component {
         this.setState({loading : true})
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
+        console.log(this.state.currentPlaylist)
         console.log(this.state.songs)
+        console.log(this.state.songIndex)
       } catch (error) {
         this.setState({loading : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
-        const songs = await axios.get(`playlists/${index +1}`, {headers : {'Authorization': this.props.token}})
+        const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data , onPlaylist : true, loading:false , currentID: songs.data.user_id})
       }
     }
@@ -235,6 +237,30 @@ export class Player extends Component {
       }
     }
 
+    async playlistStatusChange(id , privacy){
+      try{
+        if(privacy === "public"){
+          const change =  await axios.put(`playlists/${id}`, {privacy : "private"} ,  {headers : {'Authorization': this.props.token}})
+          this.fetchMyPlaylists()
+        }else{
+          const change =  await axios.put(`playlists/${id}`, {privacy : "public"} ,  {headers : {'Authorization': this.props.token}})
+          this.fetchMyPlaylists()
+        }
+      }catch(e){
+        if(privacy === "public"){
+          const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+          this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
+          const change =  await axios.put(`playlists/${id}`, {privacy : "private"} ,  {headers : {'Authorization': this.props.token}})
+          this.fetchMyPlaylists()
+        }else{
+          const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+          this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
+          const change =  await axios.put(`playlists/${id}`, {privacy : "public"} ,  {headers : {'Authorization': this.props.token}})
+          this.fetchMyPlaylists()
+        }
+      }
+    }
+
     async deletePlaylistSong(index){
       try {
         const del = await axios.delete(`playlists_songs/${index}`)
@@ -248,11 +274,9 @@ export class Player extends Component {
     async addNewList(text){
       try {
         const add = await axios.post(`playlists`, {playlist : {name: text , privacy : "public" , user_id : this.props.id}}  , {headers : {'Authorization': this.props.token}} )
-        if(this.state.onPlaylist){
+        this.setState({personal : true})
           this.fetchMyPlaylists()
-        }else{
-          this.fetchAllPlaylists()
-        }
+        
       } catch (error) {
         console.log(error)
       }
@@ -269,11 +293,16 @@ export class Player extends Component {
     }
 
     prevBtn = () => {
-      if(this.state.songIndex > 0){
-        let index = this.state.songIndex - 1
-        this.setState({
-          songIndex :  index
-        })
+      if(this.state.isRandom == false){
+        if(this.state.songIndex > 0){
+          let index = this.state.songIndex - 1
+          this.setState({
+            songIndex :  index
+          })
+        }
+      }else if(this.state.isRandom){
+        let sI = Math.floor(Math.random() * (this.state.songs.length - 1))
+        this.setState({songIndex : sI})
       }
     }
 
@@ -308,17 +337,24 @@ export class Player extends Component {
     }
 
     nextBtn = () => {
-      if(this.state.songIndex < this.state.songs.length - 1){
-        let index = this.state.songIndex + 1
-        this.setState({
-          songIndex :  index
-        })
+      if(this.state.isRandom == false ){
+        if(this.state.songIndex < this.state.songs.length - 1){
+          let index = this.state.songIndex + 1
+          this.setState({
+            songIndex :  index
+          })
+        }
+      }else if(this.state.isRandom){
+        let sI = Math.floor(Math.random() * (this.state.songs.length - 1))
+        this.setState({songIndex : sI})
       }
     }
 
     randomMode = () => {
       if(this.state.isRandom){
-        this.setState({isRandom:false})
+        this.setState({isRandom:false , onRepeat:true})
+      }else if(this.state.onRepeat){
+        this.setState({isRandom:false , onRepeat: false})
       }else{
         this.setState({isRandom:true})
       }
@@ -326,16 +362,20 @@ export class Player extends Component {
 
     nextSong = () => {
       let sI = this.state.songIndex
-      if(this.state.isRandom == false){   
+      if(this.state.isRandom == false && this.state.onRepeat == false){   
         sI++
         if(this.state.songIndex === this.state.songs.length - 1){
           this.setState({songIndex : 0})
         }else{
           this.setState({songIndex : sI})
         }
-      }else{
+      }else if(this.state.isRandom){
         sI = Math.floor(Math.random() * (this.state.songs.length - 1))
         this.setState({songIndex : sI})
+      }else{
+        this.setState({currentTime : 1})
+        this.audioReference.current.play();
+
       }
       
     }
@@ -409,7 +449,7 @@ export class Player extends Component {
     }
 
     renderSlider = () => {
-        if(this.state.songs.length > 1){
+        if(this.state.songs.length >= 1){
             return (
                 <>
                 <div className="song-time">{Math.floor((this.state.duration - this.state.currentTime) / 60) + ":" + ((this.state.duration - this.state.currentTime) % 60 ? Math.floor(this.state.duration - this.state.currentTime) % 60 : '00')}</div>
@@ -443,7 +483,10 @@ export class Player extends Component {
                   onTimeUpdate={()=> this.setState({currentTime : this.audioReference.current.currentTime})}
                   onEnded={this.nextSong}
                 />
-                <button class={this.state.isRandom ? "random-btn-active" : "random-btn"} onClick={this.randomMode}>RANDOM</button>
+                <div className="player-footer">
+                    <button class="random-btn-active" onClick={this.randomMode}>{this.state.isRandom ? "RANDOM" : this.state.onRepeat ? "REPEAT" : "NORMAL"}</button>
+                    <button class="random-btn-active" > <a  href={"http://localhost:3000" +this.state.songs[this.state.songIndex].url} download><i class="fa fa-download" aria-hidden="true"></i></a> </button>
+                </div>
                 </>
             )
         }
@@ -541,13 +584,23 @@ export class Player extends Component {
                                   <div className="song-item " onClick={() => this.fetchPlaylistSong(item.id)}>
                                       <div className="song-des">
                                           <p className="song-name">{item.name}
-                                          <a>
-                                            {this.state.currentPlaylist == index + 1?  <PlayIcon/> : ""}
-                                          </a></p>
+                                            <a>
+                                              {this.state.currentPlaylist == item.id ?  <PlayIcon/> : ""}
+                                              
+                                            </a>
+                                          </p>
                                           <p className="song-artist" >{item.user}</p>
+                                          <div className={this.state.personal ? "public-btn" : "hidden-btn"} onClick={() => this.playlistStatusChange(item.id , item.privacy)}>
+                                            <i class={item.privacy === "public" ? "fa fa-eye" : "fa fa-eye-slash"} aria-hidden="true"></i>
+                                          </div>
                                       </div>
-                                      <div className={this.state.personal ? "add-btn" : "hidden-btn"} onClick={() => this.deletePlaylistBtn(item.id)} >                             
-                                       <i class="fa fa-minus" aria-hidden="true"></i>                
+                                     
+                                      <div className={this.state.personal ? "add-btn" : "hidden-btn"}  >
+                                        
+                                        <div onClick={() => this.deletePlaylistBtn(item.id)}>
+                                          <i class="fa fa-minus" aria-hidden="true"></i> 
+                                        </div>                             
+                                                      
                                     </div>
                                   </div>
                               )
