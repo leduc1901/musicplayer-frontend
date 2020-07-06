@@ -11,11 +11,39 @@ import PauseIcon from "../Icons/PauseIcon";
 import PlayIcon from "../Icons/PlayIcon";
 import { Link } from "react-router-dom"
 import Logout from "./Logout"
+import {SortableContainer, SortableElement} from 'react-sortable-hoc';
+import arrayMove from 'array-move';
 
 import { Spin } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 const antIcon = <LoadingOutlined style={{ fontSize: 80 , color: '#1DB954'  }} spin />;
 
+const SortableItem = SortableElement(({value , id , index , changeSong , songIndex , onPlaylist , deleteOrAdd}) => (
+                <div className={songIndex == index ?  "song-item song-current" : "song-item"} >
+                  <div className="song-des" onClick={() => changeSong(id)}> 
+                      <p className="song-name">
+                        {value.name}
+                        <a>
+                          {songIndex == index ?  <PlayIcon/> : ""}
+                        </a>
+                      </p>
+                      <p className="song-artist" >{value.singer}</p>
+                  </div>
+                  <div className="add-btn" onClick={(index) => deleteOrAdd(value.id)} >                             
+                    <i class={onPlaylist ? "fa fa-minus" : "fa fa-plus"} aria-hidden="true"></i>                
+                  </div>
+              </div>
+));
+
+const SortableList = SortableContainer(({songs , changeSong , songIndex , onPlaylist , deleteOrAdd} ) => {
+  return (
+      <div>
+        {songs.map((item, index) => (
+          <SortableItem key={`item-${index}`} songIndex={songIndex} onPlaylist={onPlaylist} id={index} deleteOrAdd={deleteOrAdd} changeSong={changeSong} index={index} value={item} />
+        ))}
+      </div>
+  );
+});
 
 
 export class Player extends Component {
@@ -70,7 +98,7 @@ export class Player extends Component {
 
 
     backToAll = () => {
-      this.setState({onPlaylist : false , currentPlaylist : null})
+      this.setState({onPlaylist : false , currentPlaylist : null , currentID: null})
       this.fetchSongs()
     }
 
@@ -112,9 +140,15 @@ export class Player extends Component {
         })
       }
 
-    
+      onSortEnd = ({oldIndex, newIndex}) => {
+        this.setState(({songs}) => ({
+          songs: arrayMove(songs, oldIndex, newIndex),
+        }));
+        this.sortSongs()
+      };
+  
+
     sliderChange = ({x}) => {
-        console.log(x)
         this.audioReference.current.currentTime = x;
         this.setState({
           currentTime : x
@@ -141,7 +175,6 @@ export class Player extends Component {
     async fetchUserAvatar(){
       try{
         const avatar = await axios.get(`/users/${this.props.id}` , {headers : {'Authorization': this.props.token}})
-        console.log(avatar.data)
         this.setState({userAvatar : [avatar.data.avatar, avatar.data.name]})
       }catch(e){
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
@@ -169,7 +202,6 @@ export class Player extends Component {
         this.setState({loadingPlaylists : true})
         const playlists =  await axios.get(`/playlists/user/${this.props.id}` , {headers : {'Authorization': this.props.token}})
         this.setState({playlists : playlists.data , loadingPlaylists: false})
-        console.log(this.state.playlists)
       } catch (error) {
         this.setState({loadingPlaylists : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
@@ -179,6 +211,20 @@ export class Player extends Component {
       }
     }
 
+    async sortSongs(){
+      let arr = []
+      for(let i = 1 ; i <= this.state.songs.length ; i++){
+        arr.push({id: this.state.songs[i-1].id , index : i})
+      }
+      try {
+        if(this.state.currentID == this.props.id){
+          const sort = await axios.post("sort" , {array : arr})
+
+        }
+      } catch (error) {
+        
+      }
+    }
 
     async fetchSongs(){
         try {
@@ -200,9 +246,7 @@ export class Player extends Component {
         this.setState({loading : true})
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
-        console.log(this.state.currentPlaylist)
-        console.log(this.state.songs)
-        console.log(this.state.songIndex)
+        
       } catch (error) {
         this.setState({loading : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
@@ -227,9 +271,13 @@ export class Player extends Component {
     }
 
     async addToPlaylist(index){
+      const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
       try {
-        const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong}})
-        
+        if(songs.data.songs.length == 0){
+          const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong , song_index : 1}})
+        }else{
+          const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong , song_index : songs.data.songs.length+ 1}})
+        }
         alert("Added to playlist")
         this.setState({addSong : 0 , isAdding:false})
       } catch (error) {
@@ -278,7 +326,6 @@ export class Player extends Component {
           this.fetchMyPlaylists()
         
       } catch (error) {
-        console.log(error)
       }
     }
 
@@ -286,9 +333,9 @@ export class Player extends Component {
       try {
         const del = await axios.delete(`playlists/${index}` , {headers : {'Authorization': this.props.token}} )
         this.backToAll()
+        
         this.fetchMyPlaylists()
       } catch (error) {
-        console.log(error)
       }
     }
 
@@ -382,6 +429,7 @@ export class Player extends Component {
 
     renderPlayer = () => {
         if(this.state.songs.length >= 1){
+          
           return (
                     <>
                     <img className="thumbnail" src={this.state.songs[this.state.songIndex].image} alt="thumbnail" />
@@ -496,6 +544,7 @@ export class Player extends Component {
 
     renderAddPlaylist = () => {
       if(this.state.isAdding){
+
         return (
           <>
           <div className="add-playlist-container" >         
@@ -527,6 +576,36 @@ export class Player extends Component {
       
     }
 
+    renderAllSongs = () => {
+      return (
+        this.state.songs.map((item , index) => {
+          return (
+              <div className={this.state.songIndex == index ?  "song-item song-current" : "song-item"} >
+                  <div className="song-des" onClick={() => this.changeSong(index)}> 
+                      <p className="song-name">
+                        {item.name}
+                        <a>
+                          {this.state.songIndex == index ?  <PlayIcon/> : ""}
+                        </a>
+                      </p>
+                      <p className="song-artist" >{item.singer}</p>
+                  </div>
+                  <div className="add-btn" onClick={() => this.deleteOrAdd(item.id)} >                             
+                    <i class={this.state.onPlaylist ? "fa fa-minus" : "fa fa-plus"} aria-hidden="true"></i>                
+                  </div>
+              </div>
+          )
+      })
+      ) 
+    }
+
+   
+
+    renderPlaylistSongs = () => {
+      return <SortableList lockAxis="y" pressDelay="100" songs={this.state.songs} songIndex={this.state.songIndex} onPlaylist={this.state.onPlaylist} changeSong={this.changeSong} deleteOrAdd={this.deleteOrAdd}  onSortEnd={this.onSortEnd} />;
+
+    }
+
     render() {
       
         return (
@@ -544,24 +623,7 @@ export class Player extends Component {
                                 
                       </div>
                     {this.renderSearchBtn()}   
-                        {this.state.loading == true ? <Spin indicator={antIcon}/> :  this.state.songs && this.state.songs.map((item , index) => {
-                            return (
-                                <div className={this.state.songIndex == index ?  "song-item song-current" : "song-item"} >
-                                    <div className="song-des" onClick={() => this.changeSong(index)}> 
-                                        <p className="song-name">
-                                          {item.name}
-                                          <a>
-                                            {this.state.songIndex == index ?  <PlayIcon/> : ""}
-                                          </a>
-                                        </p>
-                                        <p className="song-artist" >{item.singer}</p>
-                                    </div>
-                                    <div className="add-btn" onClick={() => this.deleteOrAdd(item.id)} >                             
-                                      <i class={this.state.onPlaylist ? "fa fa-minus" : "fa fa-plus"} aria-hidden="true"></i>                
-                                    </div>
-                                </div>
-                            )
-                        })}
+                        {this.state.loadingPlaylists == true ? <Spin indicator={antIcon}/> : this.state.currentID == this.props.id ? this.renderPlaylistSongs() : this.renderAllSongs() }
                     </div>
                     <div className="App">
                         {this.renderPlayer()}

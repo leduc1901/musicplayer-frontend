@@ -615,6 +615,7 @@ iframe {
   margin-left: 5px;
   margin-top: 5px;
   border-bottom: 1px solid #adadad;
+  user-select: none;
 }
 .song-item img{
   max-width: 50px;
@@ -628,6 +629,7 @@ iframe {
   color: white;
   font-weight: bold;
   line-height: 20px;
+  user-select: none;
 }
 .song-artist{
   margin: 0;
@@ -636,6 +638,7 @@ iframe {
   text-align: left;
   line-height: 20px;
   color: #727375;
+  user-select: none;
 }
 .current-song{
   height: 30px;
