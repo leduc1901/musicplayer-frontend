@@ -506,7 +506,7 @@ iframe {
 .App{
   min-height: 100px;
   color : #101010;
-  padding: 200px 0;
+  padding: 100px 0;
   text-align: center;
 }
 .thumbnail{
@@ -534,22 +534,24 @@ iframe {
   justify-content: center;
   cursor: pointer;
 }
+
 .prev-btn{
-  width: 20px;
+  width: 40px;
 }
 .next-btn{
-  width: 20px;
+  width: 40px;
 }
 .play-pause-btn{
   display: flex;
   justify-content: center;
-  width: 20px;
-  height: 24px;
-  margin: 0 32px;
-  
+  width: 60px;
+  height: 60px;
+  margin: 0 20px;
+  padding: 10px 0;
+  text-align: center;
 }
 .play-pause-btn svg {
-  height: 28px;
+  
   fill : #1DB954;
 }
 .song-item{
@@ -659,7 +661,7 @@ iframe {
 }
 .logout-btn{
   width: 200px;
-  font-size: 24px;
+  font-size: 18px;
   color: white;
   border-radius: 10px;
   margin-top: 20px;
@@ -964,3 +966,19 @@ a >i{
   right: 0;
   text-align: center;
 }
+.active{
+  -webkit-animation:spin 12s linear infinite;
+    -moz-animation:spin 12s linear infinite;
+    animation:spin 12s linear infinite;
+}
+.volume-slider{
+  width: 150px;
+  color: white;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }

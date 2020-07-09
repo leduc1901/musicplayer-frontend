@@ -48,7 +48,7 @@ export class Login extends Component {
 
     async testSignUp(){
         try {
-            const logged = await axios.post(`/users` , {user: {name : this.state.regName, email : this.state.regEmail , password : this.state.regPassword , password_confirmation : this.state.regPassword2}} )
+            const logged = await axios.post(`/users` ,{name : this.state.regName, email : this.state.regEmail , password : this.state.regPassword , password_confirmation : this.state.regPassword2} )
             console.log(logged)
             this.setState({
                 login : 1

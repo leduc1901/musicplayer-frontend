@@ -59,7 +59,7 @@ export class Player extends Component {
             personal : false,
             onPlaylist : false,
             isAdding : false,
-            addSong : 0,
+            addSong : null,
             currentPlaylist : null,
             isRandom : false,
             searchValue : "",
@@ -67,7 +67,8 @@ export class Player extends Component {
             loading : true,
             loadingPlaylist : true,
             currentID : null,
-            onRepeat : false
+            onRepeat : false,
+            volume : 1
         }
     }
 
@@ -162,6 +163,11 @@ export class Player extends Component {
         }
       }
 
+      volumeChange = ({x}) => {
+        this.audioReference.current.volume = x
+        this.setState({volume : x})
+      }
+
       loadData = () => {
         this.setState({
           duration : this.audioReference.current.duration
@@ -246,13 +252,21 @@ export class Player extends Component {
         this.setState({loading : true})
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
         this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
+        if(this.state.currentID != this.props.id){
+            const mail = await axios.post('send_mail' , {id: index , name: this.props.id} , {headers : {'Authorization': this.props.token}})
+          }
+        
         
       } catch (error) {
         this.setState({loading : true})
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data , onPlaylist : true, loading:false , currentID: songs.data.user_id})
+        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
+          if(this.state.currentID != this.props.id){
+            const mail = await axios.post('send_mail' , {id: index , name: this.props.id} , {headers : {'Authorization': this.props.token}})
+          }
+        
       }
     }
 
@@ -279,7 +293,7 @@ export class Player extends Component {
           const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong , song_index : songs.data.songs.length+ 1}})
         }
         alert("Added to playlist")
-        this.setState({addSong : 0 , isAdding:false})
+        this.setState({addSong : null , isAdding:false})
       } catch (error) {
         alert("You already have this song on this playlist")
       }
@@ -311,7 +325,7 @@ export class Player extends Component {
 
     async deletePlaylistSong(index){
       try {
-        const del = await axios.delete(`playlists_songs/${index}`)
+        const del = await axios.put(`playlists/${this.state.currentPlaylist}` , {song_id : index} ,  {headers : {'Authorization': this.props.token}})
         alert("Delete Successful")
         this.fetchPlaylistSong(this.state.currentPlaylist)
       } catch (error) {
@@ -321,10 +335,13 @@ export class Player extends Component {
 
     async addNewList(text){
       try {
-        const add = await axios.post(`playlists`, {playlist : {name: text , privacy : "public" , user_id : this.props.id}}  , {headers : {'Authorization': this.props.token}} )
+        if(this.state.addSong != null){
+          const add = await axios.post(`playlists`, {playlist : {name: text , privacy : "public" , user_id : this.props.id , playlists_songs_attributes : [{song_id: this.state.addSong ,song_index: 1} ]}}  , {headers : {'Authorization': this.props.token}} )
+        }else{
+          const add = await axios.post(`playlists`, {playlist : {name: text , privacy : "public" , user_id : this.props.id , playlists_songs_attributes : [ ]}}  , {headers : {'Authorization': this.props.token}} )
+        }
         this.setState({personal : true})
           this.fetchMyPlaylists()
-        
       } catch (error) {
       }
     }
@@ -432,7 +449,7 @@ export class Player extends Component {
           
           return (
                     <>
-                    <img className="thumbnail" src={this.state.songs[this.state.songIndex].image} alt="thumbnail" />
+                    <img className={this.state.isPlaying ? "thumbnail active" : "thumbnail"} src={this.state.songs[this.state.songIndex].image} alt="thumbnail" />
                     <h2 className="title" >{this.state.songs[this.state.songIndex].name}</h2>
                     <p className="singer" >{this.state.songs[this.state.songIndex].singer}</p>
                     <h5>{this.state.songs[this.state.songIndex].category}</h5>
@@ -530,11 +547,42 @@ export class Player extends Component {
                   onLoadedData = {this.loadData}
                   onTimeUpdate={()=> this.setState({currentTime : this.audioReference.current.currentTime})}
                   onEnded={this.nextSong}
+                  
                 />
                 <div className="player-footer">
                     <button class="random-btn-active" onClick={this.randomMode}>{this.state.isRandom ? "RANDOM" : this.state.onRepeat ? "REPEAT" : "NORMAL"}</button>
                     <button class="random-btn-active" > <a  href={"http://localhost:3000" +this.state.songs[this.state.songIndex].url} download><i class="fa fa-download" aria-hidden="true"></i></a> </button>
                 </div>
+                <div className="volume-slider">
+                  <i class="fa fa-volume-up" aria-hidden="true"></i>
+                    <Slider
+                  
+                  axis = "x"
+                  xmax={1}
+                  x={this.state.volume}
+                  xstep={0.01}
+                  onChange={this.volumeChange}
+                      styles={{
+                        track: {
+                          backgroundColor: "#e3e3e3",
+                          height: "10px",
+                          width: "80px"
+                        },
+                        active: {
+                          backgroundColor: "#1DB954",
+                          height: "10px",
+                        },
+                        thumb: {
+                          marginTop: "0",
+                          width: "12px",
+                          height: "12px",
+                          backgroundColor: "#1DB954",
+                          borderRadius: 100,
+                        },
+                      }}
+                  />
+                </div>
+                
                 </>
             )
         }
@@ -553,6 +601,9 @@ export class Player extends Component {
                 <div className="add-playlist-header">
                     Add To Playlist
                     <i class="fa fa-times" onClick={this.closeAdding} aria-hidden="true"></i>    
+                </div>
+                <div className="add-playlist" onClick={this.addNewPlaylist} >                             
+                    <i class="fa fa-plus" aria-hidden="true"></i>                
                 </div>
                 <div className="add-to-playlist-option">
                   {this.state.loading == true ? <Spin indicator={antIcon}/> : this.state.playlists && this.state.playlists.map((item , index) => {

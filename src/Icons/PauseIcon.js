@@ -6,10 +6,7 @@ function SvgPauseIcon(props) {
       id="pause-icon_svg__Layer_1"
       x={0}
       y={0}
-      viewBox="0 0 14 22"
-      xmlSpace="preserve"
-      width="14px"
-      height="20px"
+      viewBox="0 0 14 20"
       {...props}
     >
       <style>{".pause-icon_svg__st0{fill:#1DB954}"}</style>
