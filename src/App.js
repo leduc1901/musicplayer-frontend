@@ -8,7 +8,7 @@ import { PersistGate } from 'redux-persist/es/integration/react';
 import {createStore} from 'redux';
 import Reducer from "./reducers"
 import {Provider} from 'react-redux';
-import { BrowserRouter , Route , Switch, Link } from "react-router-dom"
+import { BrowserRouter , Route , Switch} from "react-router-dom"
 import Player from "./components/Player"
 import  AllUser from './components/AllUser';
 import AllSong from "./components/AllSong";

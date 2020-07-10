@@ -43,7 +43,7 @@ export class User extends Component {
   }
 
   updateAll = () => {
-    if(this.state.newPhoto != ""){
+    if(this.state.newPhoto !== ""){
       this.updateUser()
     }else{
       alert("pls select image")
@@ -66,7 +66,7 @@ export class User extends Component {
         formData.append('email' , this.state.email)
         formData.append('password' , this.state.password)
         formData.append('password_confirmation' , this.state.passwordConfirmation)
-    if(this.state.name != "" && this.state.email != "" && this.state.password != "" && this.state.passwordConfirmation != "" && this.state.name.length >= 5 && this.state.password.length >= 5){
+    if(this.state.name !== "" && this.state.email !== "" && this.state.password !=="" && this.state.passwordConfirmation !== "" && this.state.name.length >= 5 && this.state.password.length >= 5){
       try{
         const photo = await axios.put(`/users/${this.props.id}`, formData, {headers : {'Authorization': this.props.token}}).then(res => {
           this.loggedInAgain()

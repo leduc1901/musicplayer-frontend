@@ -20,7 +20,7 @@ export class AllUser extends Component {
         })
         
         setTimeout(() => {
-          if(this.state.searchValue == ""){
+          if(this.state.searchValue === ""){
             this.fetchAllUsers()
           }else{
             this.fetchSearchusers()
@@ -94,11 +94,11 @@ export class AllUser extends Component {
                         <i class="fa fa-search" aria-hidden="true"></i><input onChange={this.handleSearch} type="text" size="50" placeholder="Search user's name" />
                     </div>
                     <div className="data-wrapper">
-                    {this.state.users && this.state.users.map((item , index) => {
-                        if(this.props.id != item.id){
+                    {this.state.users && this.state.users.map((item) => {
+                        if(this.props.id !== item.id){
                             return (
                             <div className="song-item user-item" >
-                            <img src={item.avatar != "" ? item.avatar : "/images/default-profile.png"}/>
+                            <img src={item.avatar !== "" ? item.avatar : "/images/default-profile.png"}/>
 
                             <div className="song-des"> 
                                         <p className="song-name">
