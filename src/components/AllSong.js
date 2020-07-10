@@ -30,6 +30,23 @@ export class AllSong extends Component {
         }
     }
 
+    async deleteSongAsync(index){
+      try {
+        const del = axios.delete(`/songs/${index}` ,{headers : {'Authorization': this.props.token}} ).then( res => {
+          alert("Delete Successful")
+          this.fetchSongs()
+        })
+      } catch (error) {
+        const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+        this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
+        const del = axios.delete(`/songs/${index}` ,{headers : {'Authorization': this.props.token}} ).then(res =>{
+          alert("Delete Successful")
+          this.fetchSongs()
+        })
+
+      }
+    }
+
     async fetchSongs(){
         try {
             this.setState({loading : true})
@@ -59,6 +76,12 @@ export class AllSong extends Component {
       }
   
 
+      deleteSong = (index) => {
+        if(window.confirm("Are you sure ?")){
+          this.deleteSongAsync(index)
+        }
+      }
+
     render() {
         return (
             <div className="container">
@@ -85,7 +108,7 @@ export class AllSong extends Component {
                                         </p>
                                         <p className="song-artist" >{item.singer}</p>
                                     </div>
-                                    <div className="add-and-del" >                             
+                                    <div className="add-and-del" onClick={() => this.deleteSong(item.id)}>                             
                                       
                                       <div>Xóa</div>          
                                     </div>

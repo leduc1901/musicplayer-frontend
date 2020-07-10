@@ -13,9 +13,12 @@ import { Link } from "react-router-dom"
 import Logout from "./Logout"
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
-
+import Checkout from "./Checkout"
 import { Spin } from 'antd';
+import {Elements , StripeProvider} from "react-stripe-elements"
 import { LoadingOutlined } from '@ant-design/icons';
+
+
 const antIcon = <LoadingOutlined style={{ fontSize: 80 , color: '#1DB954'  }} spin />;
 
 const SortableItem = SortableElement(({value , id , index , changeSong , songIndex , onPlaylist , deleteOrAdd}) => (
@@ -68,7 +71,8 @@ export class Player extends Component {
             loadingPlaylist : true,
             currentID : null,
             onRepeat : false,
-            volume : 1
+            volume : 1,
+            isPaying : false
         }
     }
 
@@ -370,6 +374,21 @@ export class Player extends Component {
       }
     }
 
+    async downloadBtn(url){
+      try {
+        const down = await axios.post(`download` , {id : this.props.id}).then(res => {
+          if(res.data.status === 200){
+            window.location.href = `http://localhost:3000${url}`
+          }else{
+            alert("You have downloaded too many times. Come back tomorrow")
+          }
+        })
+      } catch (error) {
+       console.log(error)
+      }
+      
+    }
+
     addNewPlaylist = () => {
       let text = window.prompt("Enter New Playlist Name")
       if(text != null){
@@ -378,7 +397,7 @@ export class Player extends Component {
     }
 
     closeAdding = () => {
-      this.setState({isAdding : false})
+      this.setState({isAdding : false , isPaying : false})
     }
 
     deleteOrAdd = (index) => {
@@ -475,6 +494,39 @@ export class Player extends Component {
         }
       }
 
+    activating = () => {
+      this.setState({isPaying : true})
+    }
+
+    activateAcc = () => {
+      if(this.state.isPaying){
+        return (
+          
+          <>
+          <div className="add-playlist-container" >         
+          </div>
+          <div className="add-playlist-middle" >
+                <div className="add-playlist-header">
+                    Gold Member
+                    <i class="fa fa-times" onClick={this.closeAdding} aria-hidden="true"></i>    
+                </div>
+                <StripeProvider apiKey="pk_test_51H2rMCGaay8tRlXRoTPTgCSOvcJl7Cs1SG2n7R1Qp3CR68gjlxgBBcNOtKijDeYUJxbTuic3FeRb1HeovuLB500R00mQXvYjZK" >
+                  <div>
+                    <h1>Payment</h1>
+                    <Elements>
+                      <Checkout/>
+                    </Elements>
+                  </div>
+              </StripeProvider>
+              </div>
+          </>
+          
+        )
+      }
+      
+    }
+    
+
     renderSongHeader = () => {
       if(this.state.onPlaylist){
         return (
@@ -551,7 +603,7 @@ export class Player extends Component {
                 />
                 <div className="player-footer">
                     <button class="random-btn-active" onClick={this.randomMode}>{this.state.isRandom ? "RANDOM" : this.state.onRepeat ? "REPEAT" : "NORMAL"}</button>
-                    <button class="random-btn-active" > <a  href={"http://localhost:3000" +this.state.songs[this.state.songIndex].url} download><i class="fa fa-download" aria-hidden="true"></i></a> </button>
+                    <button class="random-btn-active" onClick={() => this.downloadBtn(this.state.songs[this.state.songIndex].url)}><i class="fa fa-download" aria-hidden="true"></i> </button>
                 </div>
                 <div className="volume-slider">
                   <i class="fa fa-volume-up" aria-hidden="true"></i>
@@ -582,7 +634,8 @@ export class Player extends Component {
                       }}
                   />
                 </div>
-                
+                <button class="random-btn-active" onClick={this.activating}>ACTIVATE</button>
+
                 </>
             )
         }
@@ -662,6 +715,7 @@ export class Player extends Component {
         return (
           <div className="container">  
           {this.renderAddPlaylist()}
+          {this.activateAcc()}
           <div className="user-option">
             <Logout/>
             <button class="logout-btn" ><img src={this.state.userAvatar[0] != "" ? this.state.userAvatar[0] : "/images/default-profile.png"}/> <Link to="/user">{this.state.userAvatar[1]}</Link></button>

@@ -9,10 +9,10 @@ export class Sidebar extends Component {
         if(this.props.role == "admin"){
             return (
                 <>
-                <div><Link to="/all-users">All Users</Link></div>
-                <div><Link to="/all-songs">All Songs</Link></div>
-                <div><Link to="/all-singers">All Singers</Link></div>
-                <div><Link to="/categories">Categories</Link></div>
+                    <div><Link to="/all-users">All Users</Link></div>
+                    <div><Link to="/all-songs">All Songs</Link></div>
+                    <div><Link to="/all-singers">All Singers</Link></div>
+                    <div><Link to="/categories">Categories</Link></div>
                 </>
             )
         }
@@ -21,6 +21,7 @@ export class Sidebar extends Component {
     render() {
         return (
             <div className="admin-sidebar">
+                <button class="logout-btn"><Link to="/player">Back</Link> </button>
                 <div><Link to="/user">My Profile</Link></div>
                 {this.renderAdmin()}
                 
