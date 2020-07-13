@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import axios from "axios"
 import { connect } from "react-redux"
 import { loggedIn } from "../actions/playerAction"
-import {withRouter} from "react-router-dom"
 export class Login extends Component {
     constructor(props){
         super(props)

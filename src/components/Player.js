@@ -17,17 +17,17 @@ import Checkout from "./Checkout"
 import { Spin } from 'antd';
 import {Elements , StripeProvider} from "react-stripe-elements"
 import { LoadingOutlined } from '@ant-design/icons';
-
+import Comment from "./Comment"
 
 const antIcon = <LoadingOutlined style={{ fontSize: 80 , color: '#1DB954'  }} spin />;
 
 const SortableItem = SortableElement(({value , id , index , changeSong , songIndex , onPlaylist , deleteOrAdd}) => (
-                <div className={songIndex == index ?  "song-item song-current" : "song-item"} >
+                <div className={songIndex === index ?  "song-item song-current" : "song-item"} >
                   <div className="song-des" onClick={() => changeSong(id)}> 
                       <p className="song-name">
                         {value.name}
                         <a>
-                          {songIndex == index ?  <PlayIcon/> : ""}
+                          {songIndex === index ?  <PlayIcon/> : ""}
                         </a>
                       </p>
                       <p className="song-artist" >{value.singer}</p>
@@ -72,7 +72,9 @@ export class Player extends Component {
             currentID : null,
             onRepeat : false,
             volume : 1,
-            isPaying : false
+            isPaying : false,
+            currentSong : null,
+            comments : []
         }
     }
 
@@ -96,7 +98,7 @@ export class Player extends Component {
     changeSong = (index) => {
         this.setState({
             isPlaying : true ,
-            songIndex : index
+            songIndex : index ,
         })
     }
 
@@ -114,7 +116,7 @@ export class Player extends Component {
         document.title = 'Music Player';
         this.fetchSongs().then(res => {this.fetchUserAvatar()})
         this.fetchAllPlaylists()
-        
+        this.getComment()
     }
    
 
@@ -126,7 +128,7 @@ export class Player extends Component {
       })
       
       setTimeout(() => {
-        if(this.state.searchValue == ""){
+        if(this.state.searchValue === ""){
           this.fetchSongs()
         }else{
           this.fetchSearchSongs()
@@ -172,10 +174,11 @@ export class Player extends Component {
         this.setState({volume : x})
       }
 
-      loadData = () => {
+      loadData = (id) => {
         this.setState({
-          duration : this.audioReference.current.duration
-        })
+          duration : this.audioReference.current.duration,
+          currentSong: id
+        }, () => {this.getComment()})
         
         if(this.state.isPlaying){
           this.audioReference.current.play();
@@ -227,7 +230,7 @@ export class Player extends Component {
         arr.push({id: this.state.songs[i-1].id , index : i})
       }
       try {
-        if(this.state.currentID == this.props.id){
+        if(this.state.currentID === this.props.id){
           const sort = await axios.post("sort" , {array : arr})
 
         }
@@ -240,13 +243,13 @@ export class Player extends Component {
         try {
             this.setState({loading : true})
             const songs = await axios.get(`/songs` , {headers : {'Authorization': this.props.token}})
-            this.setState({songs : songs.data , loading : false})
+            this.setState({songs : songs.data , loading : false })
         } catch (error) {
             this.setState({loading : true})
             const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
             this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
             const songs = await axios.get(`/songs` , {headers : {'Authorization': this.props.token}})
-            this.setState({songs : songs.data , loading : false})
+            this.setState({songs : songs.data , loading : false })
         }
     }
 
@@ -255,8 +258,8 @@ export class Player extends Component {
       try {
         this.setState({loading : true})
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
-        if(this.state.currentID != this.props.id){
+        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id })
+        if(this.state.currentID !== this.props.id){
             const mail = await axios.post('send_mail' , {id: index , name: this.props.id} , {headers : {'Authorization': this.props.token}})
           }
         
@@ -266,8 +269,8 @@ export class Player extends Component {
         const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
         this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
         const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
-        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id})
-          if(this.state.currentID != this.props.id){
+        this.setState({songs : songs.data.songs , onPlaylist : true, loading:false , currentID: songs.data.user_id })
+          if(this.state.currentID !== this.props.id){
             const mail = await axios.post('send_mail' , {id: index , name: this.props.id} , {headers : {'Authorization': this.props.token}})
           }
         
@@ -291,7 +294,7 @@ export class Player extends Component {
     async addToPlaylist(index){
       const songs = await axios.get(`playlists/${index}`, {headers : {'Authorization': this.props.token}})
       try {
-        if(songs.data.songs.length == 0){
+        if(songs.data.songs.length === 0){
           const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong , song_index : 1}})
         }else{
           const add =  await axios.post(`playlists_songs`  ,{playlists_song : {playlist_id : index , song_id : this.state.addSong , song_index : songs.data.songs.length+ 1}})
@@ -349,6 +352,16 @@ export class Player extends Component {
       } catch (error) {
       }
     }
+
+    getComment = async () =>{
+      try {
+          let get = await axios.post(`getcomment` , {song_id : this.state.currentSong} ,  {headers : {'Authorization': this.props.token}}).then(res => {
+              this.setState({comments : res.data})
+          })
+      } catch (error) {
+          console.log(error)
+      }
+  }
 
     async deletePlaylist(index){
       try {
@@ -487,7 +500,7 @@ export class Player extends Component {
           )
         }else{
           return (
-            <div>
+            <div className="nothingville">
               No Songs Yet
             </div>
           )
@@ -596,7 +609,7 @@ export class Player extends Component {
                <audio
                   ref = {this.audioReference}
                   src = {this.state.songs[this.state.songIndex].url}
-                  onLoadedData = {this.loadData}
+                  onLoadedData = {() => this.loadData(this.state.onPlaylist ? this.state.songs[this.state.songIndex].song_id : this.state.songs[this.state.songIndex].id)}
                   onTimeUpdate={()=> this.setState({currentTime : this.audioReference.current.currentTime})}
                   onEnded={this.nextSong}
                   
@@ -775,6 +788,7 @@ export class Player extends Component {
                     </div>
                     
             </div>
+            <Comment comments={this.state.comments} getComment={this.getComment} currentSong={this.state.currentSong} key={1} />
             </div>
         )
     }

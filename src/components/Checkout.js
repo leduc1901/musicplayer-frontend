@@ -34,7 +34,7 @@ export class Checkout extends Component {
     }
 
     render() {
-        if(this.state.complete || this.state.verify == "verified") return <h1>You are a Gold Member !</h1>
+        if(this.state.complete || this.state.verify === "verified") return <h1>You are a Gold Member !</h1>
         return (
             <div className="checkout">
                 <p>Would you like to complete the purchase</p>
