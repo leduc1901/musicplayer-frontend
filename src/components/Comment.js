@@ -1,6 +1,7 @@
 import {connect} from "react-redux"
 import React, { Component } from 'react'
 import {loggedIn , logOut} from "../actions/playerAction"
+import { Spin } from 'antd';
 
 import axios from 'axios';
 
@@ -10,7 +11,13 @@ export class Comment extends Component {
         this.state = {
           content : "",
           comments : [],
-          reply : "",
+          replyID : null,
+          isReply : false,
+          replyName : "",
+          watchReply : false,
+          replyCount : 0,
+          replyContent : "",
+          replyImg : "",
         }
       }
     
@@ -28,20 +35,58 @@ export class Comment extends Component {
         }
       }
 
+
+    selectReply = (name , id) => {
+        this.setState({
+            replyID : id,
+            replyName : name,
+            isReply : true
+        })
+    }
     
+    cancelReply = () => {
+        this.setState({
+            replyID : null,
+            replyName : "",
+            isReply : false,
+            replyContent : "" ,
+            replyCount : 0,
+            replyImg : "",
+            watchReply : false
+        }, () => {this.props.getComment()})
+    }
+
+    watchReply = (id , name , content , reply , img) => {
+        this.setState({
+            replyContent : content ,
+            replyCount : reply,
+            replyImg : img
+        })
+        if(reply != 0){
+            this.setState({
+                replyName : name
+            })
+            this.getReply(id)
+        }
+    }
+
+  
     renderComment = () => {
-        if(this.props.comments.length >= 1){
+        if(this.props.comments.length >= 1 && this.state.watchReply === false){
             return (
                 this.props.comments && this.props.comments.map((item) => {
                     return (
-                        <div className="song-item user-item">
+                        <div className="song-item user-item" >
                             <img src={item.image !== "" ? item.image : "/images/default-profile.png"}/>
                             <div className="song-des" > 
-                                <p className="song-name">
+                                <p className="song-name" onClick={() => this.selectReply(item.name , item.id)}>
                                     {item.content}
-                                    
                                 </p>
-                                <p className="song-artist" >{item.name}</p>
+                                <div className="reply-count">
+                                    <p className="song-artist comment-reply" >{item.name}</p>
+                                    <a onClick={() => this.watchReply(item.id , item.name , item.content , item.reply , item.image)} className="song-artist comment-reply" >{`${item.reply} Trả Lời`}</a>
+                                </div>
+                                
                             </div>
                             <div className={this.props.role === 'admin' ? "add-btn" : "hidden-btn"}  >
                                         
@@ -55,6 +100,50 @@ export class Comment extends Component {
                 })
             )
    
+        }else if(this.props.comments.length >= 1 && this.state.watchReply && this.state.comments.length >= 1){
+            return (
+                <div>
+                    <div className="song-item user-item" >
+                            <img src={this.state.replyImg !== "" ? this.state.replyImg : "/images/default-profile.png"}/>
+                            <div className="song-des" > 
+                                <p className="song-name">
+                                    {this.state.replyContent}
+                                </p>
+                                <div className="reply-count">
+                                    <p className="song-artist comment-reply" >{this.state.replyName}</p>
+                                    <a className="song-artist comment-reply" >{`${this.state.replyCount} Trả Lời`}</a>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    {this.state.comments && this.state.comments.map((item) =>{
+                                        return (
+                                            <div className="song-item user-item reply-item" >
+                                            <img src={item.image !== "" ? item.image : "/images/default-profile.png"}/>
+                                            <div className="song-des" > 
+                                                <p className="song-name" onClick={() => this.selectReply(item.name , item.id)}>
+                                                    {item.content}
+                                                </p>
+                                                <div className="reply-count">
+                                                    <p className="song-artist comment-reply" >{item.name}</p>
+                                                </div>
+                                                
+                                            </div>
+                                            <div className={this.props.role === 'admin' ? "add-btn" : "hidden-btn"}  >
+                                                        
+                                                <div onClick={() => this.deleteComment(item.id)}>
+                                                        <i class="fa fa-minus" aria-hidden="true"></i> 
+                                                </div>                             
+                                                                    
+                                            </div>
+                                        </div>
+                                        )
+                                    
+                                    })}
+                </div>
+                
+            )
+            
         }else{
             return (
                 <div className="nothingville">
@@ -64,10 +153,34 @@ export class Comment extends Component {
         }
     }
 
+  
+    componentDidUpdate(previousProps){
+        if(previousProps.comments != this.props.comments){
+            this.setState({
+                replyID : null,
+                replyName : "",
+                isReply : false,
+                replyContent : "" ,
+                replyCount : 0,
+                replyImg : "",
+                watchReply : false
+            })
+        }
+        
+    }
+
     deleteCommentAsync = async (id) => {
         try {
             let del = await axios.delete(`comments/${id}` ,   {headers : {'Authorization': this.props.token}}).then(res => {
-                this.props.getComment()
+                this.setState({
+                    replyID : null,
+                    replyName : "",
+                    isReply : false,
+                    replyContent : "" ,
+                    replyCount : 0,
+                    replyImg : "",
+                    watchReply : false
+                }, () => {this.props.getComment()})
                 alert("Delete Successful")
             })
         } catch (error) {
@@ -75,27 +188,48 @@ export class Comment extends Component {
         }
     }
 
-    postComment = async () =>{
+    getReply = async (id) => { 
         try {
-            let post = await axios.post('comments' , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
-                this.props.getComment()
-                this.setState({content : ""})
-                document.getElementById("comment-input").value = ""
+            let replies = await axios.post('getreply' , {id : id} ,  {headers : {'Authorization': this.props.token}}).then(res => {
+                console.log(res)
+                this.setState({comments : res.data , watchReply : true , replyID : id})
             })
             
         } catch (error) {
-            alert("Not enough characters")
+            
         }
     }
 
-    
+    postComment = async () =>{
+            if(this.state.isReply){
+                if(this.state.content.length >= 6){
+                    let post = await axios.post('reply' , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content , parent_id : this.state.replyID} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
+                        this.getReply(this.state.replyID)
+                        this.setState({content : ""})
+                        document.getElementById("comment-input").value = ""
+                    })
+                }else{
+                    alert("not enough characters")
+                }             
+            }else{
+                if(this.state.content.length >= 6){
+                    let post = await axios.post('comments' , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
+                        this.props.getComment()
+                        this.setState({content : ""})
+                        document.getElementById("comment-input").value = ""
+                    })
+                }else{
+                    alert("not enough characters")
+                }
+            }    
+    }
 
     render() {
         return (
             <>
             <div className="comment-section">
-                <div className="search-btn">
-                    <button className="comment-btn">All</button><input onChange={this.handleSearch} id="comment-input" type="text" size="50" placeholder="Have a comment !" />
+                <div className="search-btn comment-sec">
+                    <button onClick={this.cancelReply} className="reply-btn">{this.state.replyName != "" ? this.state.replyName : "All"}</button><input onChange={this.handleSearch} id="comment-input" type="text" size="50" placeholder="Have a comment !" />
                     <button onClick={this.postComment} className="comment-btn">Post</button>
                 </div>
                 <div className="comment-load">

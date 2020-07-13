@@ -103,7 +103,7 @@ export class User extends Component {
     
 
     return (
-      <div className="container">
+      <div className="true-container">
         <Sidebar/>
         <div className="admin-container">
         <div className="admin-title">My Profile : {this.state.trueName}</div>

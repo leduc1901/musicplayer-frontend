@@ -201,7 +201,7 @@ export class NewSong extends Component {
 
     render() {
         return (
-            <div className="container">
+            <div className="true-container">
             <Sidebar/>
             {this.renderAddSinger()}
             {this.renderAddCategory()}
