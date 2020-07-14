@@ -84,7 +84,7 @@ export class AllSong extends Component {
 
     render() {
         return (
-            <div className="container">
+            <div className="true-container">
                 <Sidebar/>
                 <div className="admin-container">
                     <div className="admin-title">All Songs</div>

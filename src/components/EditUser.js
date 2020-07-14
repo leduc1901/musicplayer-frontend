@@ -104,7 +104,7 @@ export class EditUser extends Component {
     
 
     return (
-      <div className="container">
+      <div className="true-container">
         <Sidebar/>
         <div className="admin-container">
         <div className="admin-title">Edit Profile : {this.state.trueName}</div>
