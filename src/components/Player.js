@@ -355,9 +355,11 @@ export class Player extends Component {
 
     getComment = async () =>{
       try {
-          let get = await axios.post(`getcomment` , {song_id : this.state.currentSong} ,  {headers : {'Authorization': this.props.token}}).then(res => {
+          let get = await axios.get(`comments/${this.state.currentSong}/get_comment` ,  {headers : {'Authorization': this.props.token}}).then(res => {
               this.setState({comments : res.data})
+              console.log(res)
           })
+          
       } catch (error) {
           console.log(error)
       }

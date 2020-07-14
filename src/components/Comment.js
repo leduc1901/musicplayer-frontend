@@ -36,11 +36,14 @@ export class Comment extends Component {
       }
 
 
-    selectReply = (name , id) => {
+    selectReply = (name , id, content , reply , img) => {
         this.setState({
             replyID : id,
             replyName : name,
-            isReply : true
+            isReply : true,
+            replyContent : content ,
+            replyCount : reply,
+            replyImg : img
         })
     }
     
@@ -60,7 +63,8 @@ export class Comment extends Component {
         this.setState({
             replyContent : content ,
             replyCount : reply,
-            replyImg : img
+            replyImg : img,
+            isReply : true
         })
         if(reply != 0){
             this.setState({
@@ -79,7 +83,7 @@ export class Comment extends Component {
                         <div className="song-item user-item" >
                             <img src={item.image !== "" ? item.image : "/images/default-profile.png"}/>
                             <div className="song-des" > 
-                                <p className="song-name" onClick={() => this.selectReply(item.name , item.id)}>
+                                <p className="song-name" onClick={() => this.selectReply(item.name , item.id , item.content , item.reply , item.image)}>
                                     {item.content}
                                 </p>
                                 <div className="reply-count">
@@ -121,7 +125,7 @@ export class Comment extends Component {
                                             <div className="song-item user-item reply-item" >
                                             <img src={item.image !== "" ? item.image : "/images/default-profile.png"}/>
                                             <div className="song-des" > 
-                                                <p className="song-name" onClick={() => this.selectReply(item.name , item.id)}>
+                                                <p className="song-name">
                                                     {item.content}
                                                 </p>
                                                 <div className="reply-count">
@@ -190,7 +194,7 @@ export class Comment extends Component {
 
     getReply = async (id) => { 
         try {
-            let replies = await axios.post('getreply' , {id : id} ,  {headers : {'Authorization': this.props.token}}).then(res => {
+            let replies = await axios.get(`comments/${id}/getreply` ,  {headers : {'Authorization': this.props.token}}).then(res => {
                 console.log(res)
                 this.setState({comments : res.data , watchReply : true , replyID : id})
             })
@@ -203,7 +207,9 @@ export class Comment extends Component {
     postComment = async () =>{
             if(this.state.isReply){
                 if(this.state.content.length >= 6){
-                    let post = await axios.post('reply' , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content , parent_id : this.state.replyID} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
+                    const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+                    this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
+                    let post = await axios.post(`comments/${this.state.replyID}/reply` , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content , parent_id : this.state.replyID} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
                         this.getReply(this.state.replyID)
                         this.setState({content : ""})
                         document.getElementById("comment-input").value = ""
@@ -213,6 +219,8 @@ export class Comment extends Component {
                 }             
             }else{
                 if(this.state.content.length >= 6){
+                    const logged = await axios.post(`/auth/login` , {email : this.props.email, password : this.props.password})
+                    this.props.dispatchLoggedIn(this.props.email , this.props.password , logged.data.token, logged.data.id , logged.data.role)
                     let post = await axios.post('comments' , {song_id : this.props.currentSong , user_id : this.props.id , content : this.state.content} ,   {headers : {'Authorization': this.props.token}}).then(res =>{
                         this.props.getComment()
                         this.setState({content : ""})
